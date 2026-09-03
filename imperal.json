@@ -2,370 +2,1059 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.13.1",
   "app_id": "basecamp-connector",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "name": "Basecamp",
   "description": "Full-featured Basecamp 3 connector: projects, to-dos, message boards, vault documents, and webhooks via Basecamp 3 API.",
   "icon": "icon.svg",
   "actions_explicit": true,
   "system": false,
   "capabilities": [
-    "basecamp:read",
-    "basecamp:write"
+    "basecamp:manage"
   ],
   "tools": [
     {
       "name": "connect_basecamp",
-      "description": "Connect Basecamp account via OAuth access token and numeric account ID.",
+      "description": "Connect your own Basecamp account by saving Account ID and OAuth Bearer token.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:connection"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
           "label": {
-            "type": "string",
-            "default": ""
+            "default": "",
+            "description": "Connection label",
+            "title": "Label",
+            "type": "string"
           },
           "account_id": {
+            "description": "Basecamp Account ID",
+            "title": "Account Id",
             "type": "string"
           },
           "access_token": {
+            "description": "Basecamp OAuth Bearer token",
+            "title": "Access Token",
             "type": "string"
           }
         },
         "required": [
           "account_id",
           "access_token"
-        ]
-      }
+        ],
+        "title": "ConnectBasecampParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "account_id": {
+            "title": "Account Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "account_id"
+        ],
+        "title": "ConnectResult",
+        "type": "object"
+      },
+      "event": "basecamp-connector.connect_basecamp",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "list_connections",
-      "description": "List connected Basecamp accounts.",
+      "description": "List connected Basecamp accounts without exposing credentials.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
-        "properties": {}
-      }
+        "description": "Empty parameter model.",
+        "properties": {},
+        "title": "NoParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "BasecampConnection": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "account_id": {
+                "title": "Account Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "account_id"
+            ],
+            "title": "BasecampConnection",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "connections": {
+            "items": {
+              "$ref": "#/$defs/BasecampConnection"
+            },
+            "title": "Connections",
+            "type": "array"
+          }
+        },
+        "title": "ConnectionList",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "disconnect_basecamp",
       "description": "Disconnect a Basecamp account.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "delete:connection"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
           "connection_id": {
-            "type": "string",
-            "default": ""
+            "description": "Connection ID to remove",
+            "title": "Connection Id",
+            "type": "string"
           }
-        }
-      }
+        },
+        "required": [
+          "connection_id"
+        ],
+        "title": "DisconnectBasecampParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "removed_connection_id": {
+            "title": "Removed Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "removed_connection_id"
+        ],
+        "title": "DisconnectResult",
+        "type": "object"
+      },
+      "event": "basecamp-connector.disconnect_basecamp",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "list_projects",
       "description": "List Basecamp projects.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
           "connection_id": {
-            "type": "string",
-            "default": ""
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           },
           "status": {
-            "type": "string",
-            "default": "active"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "active",
+            "description": "Filter by status: active, archived, trashed",
+            "title": "Status"
           },
           "page": {
-            "type": "integer",
-            "default": 1
+            "default": 1,
+            "description": "Page number",
+            "title": "Page",
+            "type": "integer"
           }
-        }
-      }
+        },
+        "title": "ListProjectsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "projects": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "ProjectList",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "get_project",
       "description": "Read details of a Basecamp project.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
             "type": "integer"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "project_id"
-        ]
-      }
+        ],
+        "title": "GetProjectParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "",
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "active",
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProjectRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "create_project",
       "description": "Create a new Basecamp project.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:project"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "name": {
+            "description": "Project name",
+            "title": "Name",
             "type": "string"
           },
           "description": {
-            "type": "string",
-            "default": ""
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "",
+            "description": "Project description",
+            "title": "Description"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "name"
-        ]
-      }
-    },
-    {
-      "name": "list_todos",
-      "description": "List to-dos in a to-do list.",
-      "params_schema": {
-        "type": "object",
+        ],
+        "title": "CreateProjectParams",
+        "type": "object"
+      },
+      "return_schema": {
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
-          "project_id": {
+          "id": {
+            "title": "Id",
             "type": "integer"
           },
-          "todolist_id": {
-            "type": "integer"
-          },
-          "status": {
-            "type": "string",
-            "default": "active"
-          }
-        },
-        "required": [
-          "project_id",
-          "todolist_id"
-        ]
-      }
-    },
-    {
-      "name": "create_todo",
-      "description": "Create a new to-do in a project to-do list.",
-      "params_schema": {
-        "type": "object",
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
-          "project_id": {
-            "type": "integer"
-          },
-          "todolist_id": {
-            "type": "integer"
-          },
-          "content": {
+          "name": {
+            "title": "Name",
             "type": "string"
           },
           "description": {
-            "type": "string",
-            "default": ""
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "",
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "active",
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProjectRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.create_project",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
+    },
+    {
+      "name": "list_todos",
+      "description": "List to-dos in a Basecamp project.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "todolist_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional To-do List ID",
+            "title": "Todolist Id"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ListTodosParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "todos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Todos",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "TodoList",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
+    },
+    {
+      "name": "create_todo",
+      "description": "Create a new to-do item in Basecamp.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:todo"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "todolist_id": {
+            "description": "To-do List ID",
+            "title": "Todolist Id",
+            "type": "integer"
+          },
+          "content": {
+            "description": "To-do item content",
+            "title": "Content",
+            "type": "string"
           },
           "due_on": {
-            "type": "string",
-            "default": ""
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Due date (YYYY-MM-DD)",
+            "title": "Due On"
           },
-          "assignee_ids": {
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "default": []
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "project_id",
           "todolist_id",
           "content"
-        ]
-      }
+        ],
+        "title": "CreateTodoParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due On"
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ],
+        "title": "TodoRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.create_todo",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "complete_todo",
-      "description": "Mark a to-do as completed.",
+      "description": "Mark a Basecamp to-do as completed.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:todo"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
             "type": "integer"
           },
           "todo_id": {
+            "description": "To-do ID",
+            "title": "Todo Id",
             "type": "integer"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "project_id",
           "todo_id"
-        ]
-      }
+        ],
+        "title": "CompleteTodoParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due On"
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ],
+        "title": "TodoRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.complete_todo",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "uncomplete_todo",
-      "description": "Reopen a previously completed to-do.",
+      "description": "Reopen a completed Basecamp to-do.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:todo"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
             "type": "integer"
           },
           "todo_id": {
+            "description": "To-do ID",
+            "title": "Todo Id",
             "type": "integer"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "project_id",
           "todo_id"
-        ]
-      }
+        ],
+        "title": "UncompleteTodoParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "due_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due On"
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ],
+        "title": "TodoRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.uncomplete_todo",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "list_messages",
-      "description": "List messages on a project message board.",
+      "description": "List messages posted to a Basecamp project board.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
             "type": "integer"
           },
-          "message_board_id": {
-            "type": "integer"
-          },
-          "page": {
-            "type": "integer",
-            "default": 1
-          }
-        },
-        "required": [
-          "project_id",
-          "message_board_id"
-        ]
-      }
-    },
-    {
-      "name": "post_message",
-      "description": "Post a new topic/message to a project message board.",
-      "params_schema": {
-        "type": "object",
-        "properties": {
           "connection_id": {
-            "type": "string",
-            "default": ""
-          },
-          "project_id": {
-            "type": "integer"
-          },
-          "message_board_id": {
-            "type": "integer"
-          },
-          "subject": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
             "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "project_id",
-          "message_board_id",
-          "subject",
-          "content"
-        ]
-      }
-    },
-    {
-      "name": "list_webhooks",
-      "description": "List webhooks registered on a project.",
-      "params_schema": {
-        "type": "object",
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
-          "project_id": {
-            "type": "integer"
           }
         },
         "required": [
           "project_id"
-        ]
-      }
+        ],
+        "title": "ListMessagesParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "MessageList",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
+    },
+    {
+      "name": "post_message",
+      "description": "Post a new message to a Basecamp project board.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:message"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "subject": {
+            "description": "Message subject",
+            "title": "Subject",
+            "type": "string"
+          },
+          "content": {
+            "description": "Message body HTML or text",
+            "title": "Content",
+            "type": "string"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "subject",
+          "content"
+        ],
+        "title": "PostMessageParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "",
+            "title": "Content"
+          }
+        },
+        "required": [
+          "id",
+          "subject"
+        ],
+        "title": "MessageRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.post_message",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
+    },
+    {
+      "name": "list_webhooks",
+      "description": "List registered webhooks in Basecamp.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ListWebhooksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "webhooks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Webhooks",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "WebhookList",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "create_webhook",
-      "description": "Register a new webhook on a project.",
+      "description": "Register a new webhook endpoint in Basecamp.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:webhook"
+      ],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          },
           "project_id": {
+            "description": "Basecamp Project ID",
+            "title": "Project Id",
             "type": "integer"
           },
           "payload_url": {
+            "description": "Target webhook URL",
+            "title": "Payload Url",
             "type": "string"
           },
           "types": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": []
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Event types to subscribe to",
+            "title": "Types"
+          },
+          "connection_id": {
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
         },
         "required": [
           "project_id",
           "payload_url"
-        ]
-      }
+        ],
+        "title": "CreateWebhookParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "payload_url": {
+            "title": "Payload Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "payload_url"
+        ],
+        "title": "WebhookRecord",
+        "type": "object"
+      },
+      "event": "basecamp-connector.create_webhook",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     },
     {
       "name": "audit_basecamp_health",
-      "description": "Value-add: audit Basecamp account health and project counts.",
+      "description": "Audit account connectivity, project count, and active to-dos.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
       "params_schema": {
-        "type": "object",
         "properties": {
           "connection_id": {
-            "type": "string",
-            "default": ""
+            "default": "",
+            "description": "Optional connection ID",
+            "title": "Connection Id",
+            "type": "string"
           }
-        }
-      }
+        },
+        "title": "AuditHealthParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "projects_count": {
+            "title": "Projects Count",
+            "type": "integer"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "projects_count",
+          "detail"
+        ],
+        "title": "HealthAuditResult",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_basecamp-connector_chat"
     }
   ],
+  "signals": [],
+  "schedules": [],
+  "required_scopes": [],
+  "icon_size_bytes": 545,
+  "lifecycle": {
+    "health_check": {
+      "interval_sec": 60
+    }
+  },
   "panels": [
     {
-      "name": "basecamp_sidebar",
+      "panel_id": "basecamp_sidebar",
       "slot": "left",
-      "title": "Basecamp Sidebar"
+      "title": "",
+      "tree": {},
+      "icon": "",
+      "refresh": "manual",
+      "center_overlay": false
     },
     {
-      "name": "basecamp_settings",
+      "panel_id": "basecamp_settings",
       "slot": "center",
-      "title": "Basecamp Settings"
+      "title": "",
+      "tree": {},
+      "icon": "",
+      "refresh": "manual",
+      "center_overlay": false
     }
   ],
   "pricing": {
@@ -394,7 +1083,6 @@
       "list_webhooks": 8,
       "create_webhook": 16,
       "audit_basecamp_health": 40
-    },
-    "notes": "Canonical pricing aligned with PRICING_POLICY.md (standard scale 0/8/16/20/40/60)."
+    }
   }
 }

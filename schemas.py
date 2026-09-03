@@ -1,88 +1,134 @@
-"""Pydantic schemas for Basecamp Connector (Basecamp 3 API)."""
+"""Pydantic schemas for Basecamp Connector."""
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
-class ConnectBasecampParams(BaseModel):
-    label: str = Field(default="", description="Friendly connection label, e.g. Production Basecamp.")
-    account_id: str = Field(description="Basecamp numeric account ID (found in URL: 3.basecampapi.com/{account_id}).")
-    access_token: str = Field(description="OAuth 2.0 Bearer access token.")
+class NoParams(BaseModel):
+    """Empty parameter model."""
+    pass
 
-class ConnectionIdParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier (empty uses active connection).")
+class ConnectBasecampParams(BaseModel):
+    label: str = Field(default="", description="Connection label")
+    account_id: str = Field(..., description="Basecamp Account ID")
+    access_token: str = Field(..., description="Basecamp OAuth Bearer token")
+
+class DisconnectBasecampParams(BaseModel):
+    connection_id: str = Field(..., description="Connection ID to remove")
 
 class ListProjectsParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    status: str = Field(default="active", description="Filter by status: active, archived, or trashed.")
-    page: int = Field(default=1, description="Page number for pagination.")
+    connection_id: str = Field(default="", description="Optional connection ID")
+    status: Optional[str] = Field(default="active", description="Filter by status: active, archived, trashed")
+    page: int = Field(default=1, description="Page number")
 
 class GetProjectParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class CreateProjectParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    name: str = Field(description="Project name.")
-    description: str = Field(default="", description="Project description.")
+    name: str = Field(..., description="Project name")
+    description: Optional[str] = Field(default="", description="Project description")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class ListTodosParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    todolist_id: int = Field(description="To-do list ID.")
-    status: str = Field(default="active", description="Filter by status: active, completed, or trashed.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    todolist_id: Optional[int] = Field(default=None, description="Optional To-do List ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class CreateTodoParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    todolist_id: int = Field(description="To-do list ID where task is created.")
-    content: str = Field(description="To-do title/content.")
-    description: str = Field(default="", description="Additional details/notes (HTML supported).")
-    due_on: str = Field(default="", description="Due date in YYYY-MM-DD format.")
-    assignee_ids: list[int] = Field(default_factory=list, description="List of user IDs assigned to this to-do.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    todolist_id: int = Field(..., description="To-do List ID")
+    content: str = Field(..., description="To-do item content")
+    due_on: Optional[str] = Field(default=None, description="Due date (YYYY-MM-DD)")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class CompleteTodoParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    todo_id: int = Field(description="To-do ID to complete.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    todo_id: int = Field(..., description="To-do ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class UncompleteTodoParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    todo_id: int = Field(description="To-do ID to uncomplete.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    todo_id: int = Field(..., description="To-do ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class ListMessagesParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    message_board_id: int = Field(description="Message board ID.")
-    page: int = Field(default=1, description="Page number.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class PostMessageParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    message_board_id: int = Field(description="Message board ID.")
-    subject: str = Field(description="Message subject.")
-    content: str = Field(description="Message body content (HTML supported).")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    subject: str = Field(..., description="Message subject")
+    content: str = Field(..., description="Message body HTML or text")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class ListWebhooksParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class CreateWebhookParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
-    project_id: int = Field(description="Project ID.")
-    payload_url: str = Field(description="Target HTTPS callback URL.")
-    types: list[str] = Field(default_factory=list, description="Event types to subscribe to (e.g. ['Todo', 'Comment']).")
+    project_id: int = Field(..., description="Basecamp Project ID")
+    payload_url: str = Field(..., description="Target webhook URL")
+    types: Optional[List[str]] = Field(default=None, description="Event types to subscribe to")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
 class AuditHealthParams(BaseModel):
-    connection_id: str = Field(default="", description="Connection identifier.")
+    connection_id: str = Field(default="", description="Optional connection ID")
 
-class ConnectionRecord(BaseModel):
+# Return Models for typed ActionResult
+class BasecampConnection(BaseModel):
     id: str
     label: str
     account_id: str
-    masked_token: str
-    is_active: bool
 
 class ConnectionList(BaseModel):
-    connections: list[ConnectionRecord]
-    total: int
+    connections: List[BasecampConnection] = Field(default_factory=list)
+
+class ConnectResult(BaseModel):
+    id: str
+    label: str
+    account_id: str
+
+class DisconnectResult(BaseModel):
+    removed_connection_id: str
+
+class ProjectRecord(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = ""
+    status: Optional[str] = "active"
+
+class ProjectList(BaseModel):
+    projects: List[Dict[str, Any]] = Field(default_factory=list)
+    count: int
+
+class TodoRecord(BaseModel):
+    id: int
+    content: str
+    completed: bool = False
+    due_on: Optional[str] = None
+
+class TodoList(BaseModel):
+    todos: List[Dict[str, Any]] = Field(default_factory=list)
+    count: int
+
+class MessageRecord(BaseModel):
+    id: int
+    subject: str
+    content: Optional[str] = ""
+
+class MessageList(BaseModel):
+    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    count: int
+
+class WebhookRecord(BaseModel):
+    id: int
+    payload_url: str
+
+class WebhookList(BaseModel):
+    webhooks: List[Dict[str, Any]] = Field(default_factory=list)
+    count: int
+
+class HealthAuditResult(BaseModel):
+    status: str
+    projects_count: int
+    detail: str

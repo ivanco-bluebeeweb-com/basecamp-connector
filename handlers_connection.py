@@ -1,101 +1,104 @@
-"""Connection handlers for Basecamp Connector."""
+"""Connection lifecycle handlers for Basecamp Connector."""
 from __future__ import annotations
-import json
-import uuid
+import json, uuid
 from imperal_sdk import ActionResult
 from app import chat
-from schemas import ConnectBasecampParams, ConnectionIdParams, ConnectionRecord, ConnectionList
+from schemas import (
+    ConnectBasecampParams, DisconnectBasecampParams, NoParams,
+    ConnectionList, BasecampConnection, ConnectResult, DisconnectResult
+)
 from basecamp_client import BasecampClient
 
-_SECRET = "basecamp_connections"
+SECRET_KEY = "basecamp_connections"
 
 async def _load_connections(ctx) -> list[dict]:
-    raw = await ctx.secrets.get(_SECRET)
+    raw = await ctx.secrets.get(SECRET_KEY)
     if not raw:
         return []
     try:
-        data = json.loads(raw)
+        return json.loads(raw)
     except Exception:
         return []
-    return data if isinstance(data, list) else []
 
-async def _save_connections(ctx, conns: list[dict]) -> None:
-    await ctx.secrets.set(_SECRET, json.dumps(conns))
-
-async def resolve_connection(ctx, connection_id: str = "") -> dict | None:
-    conns = await _load_connections(ctx)
-    if not conns:
-        return None
-    if not connection_id:
-        for c in conns:
-            if c.get("is_active"):
-                return c
-        return conns[0]
-    for c in conns:
-        if c.get("id") == connection_id:
-            return c
-    return None
+async def _save_connections(ctx, connections: list[dict]) -> None:
+    await ctx.secrets.set(SECRET_KEY, json.dumps(connections))
 
 async def resolve_client(ctx, connection_id: str = "") -> BasecampClient:
-    conn = await resolve_connection(ctx, connection_id)
-    if not conn:
-        raise ValueError("No Basecamp account connected. Please connect one first.")
-    return BasecampClient(account_id=conn["account_id"], access_token=conn["access_token"])
+    connections = await _load_connections(ctx)
+    if not connections:
+        raise ValueError("No Basecamp connections found. Please connect an account first.")
+    if connection_id:
+        for c in connections:
+            if c.get("id") == connection_id:
+                return BasecampClient(account_id=c["account_id"], access_token=c["access_token"])
+        raise ValueError(f"Connection ID {connection_id} not found.")
+    c = connections[0]
+    return BasecampClient(account_id=c["account_id"], access_token=c["access_token"])
 
-@chat.function("connect_basecamp", action_type="write", description="Connect a Basecamp workspace by saving account ID and OAuth token.")
-async def connect_basecamp(params: ConnectBasecampParams, ctx) -> ActionResult[ConnectionRecord]:
+@chat.function(
+    "connect_basecamp",
+    "Connect your own Basecamp account by saving Account ID and OAuth Bearer token.",
+    action_type="write",
+    chain_callable=True,
+    event="basecamp-connector.connect_basecamp",
+    effects=["create:connection"],
+    data_model=ConnectResult
+)
+async def connect_basecamp(ctx, params: ConnectBasecampParams) -> ActionResult:
+    """Connect a Basecamp account after verifying credentials."""
     client = BasecampClient(account_id=params.account_id, access_token=params.access_token)
-    await client.verify()
-    conns = await _load_connections(ctx)
-    cid = f"conn_{uuid.uuid4().hex[:8]}"
-    record = {
-        "id": cid,
-        "label": params.label or f"Basecamp Account {params.account_id}",
+    if not await client.verify():
+        return ActionResult.error("Failed to verify Basecamp connection with provided credentials.")
+    connections = await _load_connections(ctx)
+    conn_id = str(uuid.uuid4())
+    entry = {
+        "id": conn_id,
+        "label": params.label or f"Basecamp ({params.account_id})",
         "account_id": params.account_id,
-        "access_token": params.access_token,
-        "is_active": True
+        "access_token": params.access_token
     }
-    for c in conns:
-        c["is_active"] = False
-    conns.append(record)
-    await _save_connections(ctx, conns)
-    return ActionResult.ok(
-        ConnectionRecord(
-            id=record["id"],
-            label=record["label"],
-            masked_key=f"••••{params.access_token[-4:]}",
-            base_url=f"https://3.basecampapi.com/{params.account_id}",
-            is_active=True
-        ),
-        summary=f"Connected Basecamp account {params.account_id} successfully."
+    connections.append(entry)
+    await _save_connections(ctx, connections)
+    return ActionResult.success(
+        ConnectResult(id=conn_id, label=entry["label"], account_id=params.account_id),
+        summary=f"Connected Basecamp account {params.account_id}."
     )
 
-@chat.function("list_connections", action_type="read", description="List connected Basecamp workspaces.")
-async def list_connections(ctx) -> ActionResult[ConnectionList]:
-    conns = await _load_connections(ctx)
-    records = [
-        ConnectionRecord(
-            id=c["id"],
-            label=c.get("label", ""),
-            masked_key=f"••••{c['access_token'][-4:]}" if c.get("access_token") else "",
-            base_url=f"https://3.basecampapi.com/{c.get('account_id', '')}",
-            is_active=c.get("is_active", False)
-        )
-        for c in conns
-    ]
-    return ActionResult.ok(ConnectionList(connections=records, total=len(records)), summary=f"Found {len(records)} connection(s).")
+@chat.function(
+    "list_connections",
+    "List connected Basecamp accounts without exposing credentials.",
+    action_type="read",
+    chain_callable=True,
+    data_model=ConnectionList
+)
+async def list_connections(ctx, params: NoParams) -> ActionResult:
+    """List connected Basecamp accounts."""
+    connections = await _load_connections(ctx)
+    return ActionResult.success(
+        ConnectionList(connections=[
+            BasecampConnection(id=c.get("id", ""), label=c.get("label", ""), account_id=c.get("account_id", ""))
+            for c in connections
+        ]),
+        summary=f"Found {len(connections)} Basecamp connection(s)."
+    )
 
-@chat.function("disconnect_basecamp", action_type="write", description="Disconnect a Basecamp workspace.")
-async def disconnect_basecamp(params: ConnectionIdParams, ctx) -> ActionResult:
-    conns = await _load_connections(ctx)
-    target = params.connection_id
-    if not target:
-        for c in conns:
-            if c.get("is_active"):
-                target = c.get("id")
-                break
-    conns = [c for c in conns if c.get("id") != target]
-    if conns and not any(c.get("is_active") for c in conns):
-        conns[0]["is_active"] = True
-    await _save_connections(ctx, conns)
-    return ActionResult.ok({"disconnected": target}, summary="Basecamp account disconnected.")
+@chat.function(
+    "disconnect_basecamp",
+    "Disconnect a Basecamp account.",
+    action_type="write",
+    chain_callable=True,
+    event="basecamp-connector.disconnect_basecamp",
+    effects=["delete:connection"],
+    data_model=DisconnectResult
+)
+async def disconnect_basecamp(ctx, params: DisconnectBasecampParams) -> ActionResult:
+    """Disconnect a Basecamp account by ID."""
+    connections = await _load_connections(ctx)
+    remaining = [c for c in connections if c.get("id") != params.connection_id]
+    if len(remaining) == len(connections):
+        return ActionResult.error(f"Connection {params.connection_id} not found.")
+    await _save_connections(ctx, remaining)
+    return ActionResult.success(
+        DisconnectResult(removed_connection_id=params.connection_id),
+        summary=f"Disconnected Basecamp account {params.connection_id}."
+    )
