@@ -1,39 +1,102 @@
-"""HTTP client for Basecamp API."""
+"""HTTP client for Basecamp 3 API."""
 from __future__ import annotations
 import httpx
 from typing import Any
 
-DEFAULT_BASE = "https://basecamp.com"
-
 class BasecampClient:
-    def __init__(self, api_key: str, base_url: str = ""):
-        self.api_key = api_key
-        self.base_url = (base_url.strip() if base_url else DEFAULT_BASE).rstrip('/')
+    def __init__(self, account_id: str, access_token: str):
+        self.account_id = account_id.strip()
+        self.access_token = access_token.strip()
+        self.base_url = f"https://3.basecampapi.com/{self.account_id}"
         self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
-            "User-Agent": "Imperal-basecamp-connector/0.1.0"
+            "User-Agent": "Imperal-Cloud-OS (integrations@imperal.io)"
         }
         self.timeout = httpx.Timeout(30.0, connect=10.0)
 
-    async def test_auth(self) -> dict[str, Any]:
+    async def verify(self) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            try:
-                resp = await client.get(f"{self.base_url}/api/v1/me", headers=self.headers)
-                if resp.status_code in (200, 201):
-                    return resp.json()
-                elif resp.status_code == 404:
-                    return {"status": "ok", "message": "Auth header accepted; root ping verified."}
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPError as e:
-                return {"status": "verified", "base_url": self.base_url}
+            resp = await client.get(f"{self.base_url}/projects.json", headers=self.headers)
+            if resp.status_code in (200, 201):
+                return {"status": "ok", "project_count": len(resp.json())}
+            resp.raise_for_status()
+            return resp.json()
 
-    async def get_overview(self) -> dict[str, Any]:
-        return await self.test_auth()
+    async def list_projects(self, status: str = "active", page: int = 1) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            params = {"status": status, "page": page} if status != "active" else {"page": page}
+            resp = await client.get(f"{self.base_url}/projects.json", headers=self.headers, params=params)
+            resp.raise_for_status()
+            return resp.json()
 
-    async def list_resources(self, limit: int = 50, cursor: str = "") -> dict[str, Any]:
-        return {"items": [], "total": 0, "next_cursor": None}
+    async def get_project(self, project_id: int) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.get(f"{self.base_url}/projects/{project_id}.json", headers=self.headers)
+            resp.raise_for_status()
+            return resp.json()
 
-    async def get_resource(self, resource_id: str) -> dict[str, Any]:
-        return {"id": resource_id, "name": f"Resource {resource_id}", "status": "active"}
+    async def create_project(self, name: str, description: str = "") -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload = {"name": name, "description": description}
+            resp = await client.post(f"{self.base_url}/projects.json", headers=self.headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def list_todos(self, project_id: int, todolist_id: int, status: str = "active") -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            params = {"status": status}
+            resp = await client.get(f"{self.base_url}/buckets/{project_id}/todolists/{todolist_id}/todos.json", headers=self.headers, params=params)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def create_todo(self, project_id: int, todolist_id: int, content: str, description: str = "", due_on: str = "", assignee_ids: list[int] | None = None) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload: dict[str, Any] = {"content": content, "description": description}
+            if due_on:
+                payload["due_on"] = due_on
+            if assignee_ids:
+                payload["assignee_ids"] = assignee_ids
+            resp = await client.post(f"{self.base_url}/buckets/{project_id}/todolists/{todolist_id}/todos.json", headers=self.headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def complete_todo(self, project_id: int, todo_id: int) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.post(f"{self.base_url}/buckets/{project_id}/todos/{todo_id}/completion.json", headers=self.headers)
+            resp.raise_for_status()
+            return resp.json() if resp.text else {"status": "completed", "id": todo_id}
+
+    async def uncomplete_todo(self, project_id: int, todo_id: int) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.delete(f"{self.base_url}/buckets/{project_id}/todos/{todo_id}/completion.json", headers=self.headers)
+            resp.raise_for_status()
+            return resp.json() if resp.text else {"status": "uncompleted", "id": todo_id}
+
+    async def list_messages(self, project_id: int, message_board_id: int, page: int = 1) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.get(f"{self.base_url}/buckets/{project_id}/message_boards/{message_board_id}/messages.json", headers=self.headers, params={"page": page})
+            resp.raise_for_status()
+            return resp.json()
+
+    async def post_message(self, project_id: int, message_board_id: int, subject: str, content: str) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload = {"subject": subject, "content": content, "status": "active"}
+            resp = await client.post(f"{self.base_url}/buckets/{project_id}/message_boards/{message_board_id}/messages.json", headers=self.headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def list_webhooks(self, project_id: int) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.get(f"{self.base_url}/buckets/{project_id}/webhooks.json", headers=self.headers)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def create_webhook(self, project_id: int, payload_url: str, types: list[str] | None = None) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload: dict[str, Any] = {"payload_url": payload_url, "active": True}
+            if types:
+                payload["types"] = types
+            resp = await client.post(f"{self.base_url}/buckets/{project_id}/webhooks.json", headers=self.headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()

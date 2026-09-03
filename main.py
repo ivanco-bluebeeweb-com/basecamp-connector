@@ -1,47 +1,34 @@
-"""Main entrypoint for Basecamp Connector."""
-from __future__ import annotations
-from app import ext
+"""Basecamp Connector execution entrypoint."""
+from app import app
 import handlers_connection as hc
 import handlers_resources as hr
-import panels
-import panels_settings
 
-# Register tools
-ext.register_tool(
-    name="connect_basecamp",
-    handler=hc.connect_basecamp,
-    description="Connect a Basecamp workspace by saving an API key."
-)
-ext.register_tool(
-    name="list_connections",
-    handler=hc.list_connections,
-    description="List connected Basecamp workspaces."
-)
-ext.register_tool(
-    name="disconnect_basecamp",
-    handler=hc.disconnect_basecamp,
-    description="Disconnect a Basecamp workspace."
-)
-ext.register_tool(
-    name="get_overview",
-    handler=hr.get_overview,
-    description="Read Basecamp account overview and status."
-)
-ext.register_tool(
-    name="audit_health",
-    handler=hr.audit_health,
-    description="Build health audit report for Basecamp connection."
-)
-ext.register_tool(
-    name="list_resources",
-    handler=hr.list_resources,
-    description="List resources in Basecamp."
-)
-ext.register_tool(
-    name="get_resource",
-    handler=hr.get_resource,
-    description="Get details of a Basecamp resource."
-)
+# Register connection tools
+app.register_tool("connect_basecamp", hc.connect_basecamp)
+app.register_tool("list_connections", hc.list_connections)
+app.register_tool("disconnect_basecamp", hc.disconnect_basecamp)
+
+# Register project tools
+app.register_tool("list_projects", hr.list_projects)
+app.register_tool("get_project", hr.get_project)
+app.register_tool("create_project", hr.create_project)
+
+# Register to-do tools
+app.register_tool("list_todos", hr.list_todos)
+app.register_tool("create_todo", hr.create_todo)
+app.register_tool("complete_todo", hr.complete_todo)
+app.register_tool("uncomplete_todo", hr.uncomplete_todo)
+
+# Register message tools
+app.register_tool("list_messages", hr.list_messages)
+app.register_tool("post_message", hr.post_message)
+
+# Register webhook tools
+app.register_tool("list_webhooks", hr.list_webhooks)
+app.register_tool("create_webhook", hr.create_webhook)
+
+# Value-add audit
+app.register_tool("audit_basecamp_health", hr.audit_basecamp_health)
 
 if __name__ == "__main__":
-    ext.run()
+    app.run()

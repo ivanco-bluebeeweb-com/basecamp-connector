@@ -2,8 +2,16 @@
   "connect_basecamp": 0,
   "list_connections": 0,
   "disconnect_basecamp": 0,
-  "get_overview": 1,
-  "audit_health": 2,
-  "list_resources": 1,
-  "get_resource": 1
+  "list_projects": 8,
+  "get_project": 8,
+  "create_project": 16,
+  "list_todos": 8,
+  "create_todo": 16,
+  "complete_todo": 8,
+  "uncomplete_todo": 8,
+  "list_messages": 8,
+  "post_message": 8,
+  "list_webhooks": 8,
+  "create_webhook": 16,
+  "audit_basecamp_health": 40
 }

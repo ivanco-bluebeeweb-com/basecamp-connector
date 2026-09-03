@@ -1,62 +1,117 @@
-"""Resource handlers for Basecamp."""
+"""Resource operation handlers for Basecamp Connector."""
 from __future__ import annotations
-import time
 from imperal_sdk import ActionResult
-from app import chat
+from handlers_connection import resolve_client
 from schemas import (
-    ConnectionIdParams, ResourceIdParams, ListResourcesParams,
-    AccountOverview, HealthReport, ResourceRecord, ResourceList
+    ListProjectsParams, GetProjectParams, CreateProjectParams,
+    ListTodosParams, CreateTodoParams, CompleteTodoParams, UncompleteTodoParams,
+    ListMessagesParams, PostMessageParams, ListWebhooksParams, CreateWebhookParams,
+    AuditHealthParams
 )
-from handlers_connection import _load_conns
-from basecamp_client import BasecampClient
 
-async def _get_client(params, ctx):
-    conns = await _load_conns(ctx)
-    if not conns:
-        return None, "No connected Basecamp account found. Please connect first."
-    cid = getattr(params, "connection_id", "")
-    target = None
-    if cid:
-        for c in conns:
-            if c["id"] == cid:
-                target = c
-                break
-    if not target:
-        target = next((c for c in conns if c.get("is_active")), conns[0])
-    return BasecampClient(api_key=target["api_key"], base_url=target.get("base_url", "")), None
+async def list_projects(params: ListProjectsParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        items = await client.list_projects(status=params.status, page=params.page)
+        return ActionResult.ok({"projects": items, "count": len(items)}, summary=f"Retrieved {len(items)} projects.")
+    except Exception as e:
+        return ActionResult.error(f"Error listing projects: {e}")
 
-async def get_overview(params: ConnectionIdParams, ctx) -> ActionResult:
-    client, err = await _get_client(params, ctx)
-    if err:
-        return ActionResult.error(err)
-    data = await client.get_overview()
-    return ActionResult.ok(f"Basecamp overview retrieved", data=data)
+async def get_project(params: GetProjectParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        item = await client.get_project(params.project_id)
+        return ActionResult.ok(item, summary=f"Retrieved project: {item.get('name')}")
+    except Exception as e:
+        return ActionResult.error(f"Error reading project: {e}")
 
-async def audit_health(params: ConnectionIdParams, ctx) -> ActionResult:
-    start = time.perf_counter()
-    client, err = await _get_client(params, ctx)
-    if err:
-        return ActionResult.error(err)
-    data = await client.test_auth()
-    latency = round((time.perf_counter() - start) * 1000, 2)
-    rep = HealthReport(
-        status="healthy" if data.get("status") in ("ok", "verified") else "warning",
-        connected=True,
-        latency_ms=latency,
-        message=f"Basecamp responsive in {latency}ms"
-    )
-    return ActionResult.ok(f"Basecamp health audit: {rep.status}", data=rep.dict())
+async def create_project(params: CreateProjectParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        item = await client.create_project(name=params.name, description=params.description)
+        return ActionResult.ok(item, summary=f"Created project: {params.name}")
+    except Exception as e:
+        return ActionResult.error(f"Error creating project: {e}")
 
-async def list_resources(params: ListResourcesParams, ctx) -> ActionResult:
-    client, err = await _get_client(params, ctx)
-    if err:
-        return ActionResult.error(err)
-    data = await client.list_resources(limit=params.limit, cursor=params.cursor)
-    return ActionResult.ok(f"Basecamp resources listed", data=data)
+async def list_todos(params: ListTodosParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        items = await client.list_todos(project_id=params.project_id, todolist_id=params.todolist_id, status=params.status)
+        return ActionResult.ok({"todos": items, "count": len(items)}, summary=f"Retrieved {len(items)} to-dos.")
+    except Exception as e:
+        return ActionResult.error(f"Error listing to-dos: {e}")
 
-async def get_resource(params: ResourceIdParams, ctx) -> ActionResult:
-    client, err = await _get_client(params, ctx)
-    if err:
-        return ActionResult.error(err)
-    data = await client.get_resource(params.resource_id)
-    return ActionResult.ok(f"Basecamp resource {params.resource_id} retrieved", data=data)
+async def create_todo(params: CreateTodoParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        item = await client.create_todo(
+            project_id=params.project_id,
+            todolist_id=params.todolist_id,
+            content=params.content,
+            description=params.description,
+            due_on=params.due_on,
+            assignee_ids=params.assignee_ids
+        )
+        return ActionResult.ok(item, summary=f"Created to-do: {params.content}")
+    except Exception as e:
+        return ActionResult.error(f"Error creating to-do: {e}")
+
+async def complete_todo(params: CompleteTodoParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        res = await client.complete_todo(project_id=params.project_id, todo_id=params.todo_id)
+        return ActionResult.ok(res, summary=f"Marked to-do {params.todo_id} complete.")
+    except Exception as e:
+        return ActionResult.error(f"Error completing to-do: {e}")
+
+async def uncomplete_todo(params: UncompleteTodoParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        res = await client.uncomplete_todo(project_id=params.project_id, todo_id=params.todo_id)
+        return ActionResult.ok(res, summary=f"Reopened to-do {params.todo_id}.")
+    except Exception as e:
+        return ActionResult.error(f"Error reopening to-do: {e}")
+
+async def list_messages(params: ListMessagesParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        items = await client.list_messages(project_id=params.project_id, message_board_id=params.message_board_id, page=params.page)
+        return ActionResult.ok({"messages": items, "count": len(items)}, summary=f"Retrieved {len(items)} messages.")
+    except Exception as e:
+        return ActionResult.error(f"Error listing messages: {e}")
+
+async def post_message(params: PostMessageParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        item = await client.post_message(project_id=params.project_id, message_board_id=params.message_board_id, subject=params.subject, content=params.content)
+        return ActionResult.ok(item, summary=f"Posted message: {params.subject}")
+    except Exception as e:
+        return ActionResult.error(f"Error posting message: {e}")
+
+async def list_webhooks(params: ListWebhooksParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        items = await client.list_webhooks(project_id=params.project_id)
+        return ActionResult.ok({"webhooks": items, "count": len(items)}, summary=f"Retrieved {len(items)} webhooks.")
+    except Exception as e:
+        return ActionResult.error(f"Error listing webhooks: {e}")
+
+async def create_webhook(params: CreateWebhookParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        item = await client.create_webhook(project_id=params.project_id, payload_url=params.payload_url, types=params.types)
+        return ActionResult.ok(item, summary=f"Registered webhook pointing to {params.payload_url}")
+    except Exception as e:
+        return ActionResult.error(f"Error creating webhook: {e}")
+
+async def audit_basecamp_health(params: AuditHealthParams, ctx) -> ActionResult:
+    client = await resolve_client(ctx, params.connection_id)
+    try:
+        projects = await client.list_projects(status="active")
+        return ActionResult.ok({
+            "status": "healthy",
+            "active_projects": len(projects),
+            "projects_sample": [{"id": p.get("id"), "name": p.get("name")} for p in projects[:5]]
+        }, summary=f"Basecamp account healthy with {len(projects)} active projects.")
+    except Exception as e:
+        return ActionResult.error(f"Health audit failed: {e}")

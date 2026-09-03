@@ -2,19 +2,20 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.13.1",
   "app_id": "basecamp-connector",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "name": "Basecamp",
-  "description": "Official Imperal connector for Basecamp (C25. Project & Work Management). Connect via API key and manage operations securely.",
+  "description": "Full-featured Basecamp 3 connector: projects, to-dos, message boards, vault documents, and webhooks via Basecamp 3 API.",
   "icon": "icon.svg",
   "actions_explicit": true,
   "system": false,
   "capabilities": [
-    "basecamp:manage"
+    "basecamp:read",
+    "basecamp:write"
   ],
   "tools": [
     {
       "name": "connect_basecamp",
-      "description": "Connect a Basecamp workspace by saving an API key.",
+      "description": "Connect Basecamp account via OAuth access token and numeric account ID.",
       "parameters_schema": {
         "type": "object",
         "properties": {
@@ -22,22 +23,22 @@
             "type": "string",
             "default": ""
           },
-          "api_key": {
+          "account_id": {
             "type": "string"
           },
-          "base_url": {
-            "type": "string",
-            "default": ""
+          "access_token": {
+            "type": "string"
           }
         },
         "required": [
-          "api_key"
+          "account_id",
+          "access_token"
         ]
       }
     },
     {
       "name": "list_connections",
-      "description": "List connected Basecamp workspaces.",
+      "description": "List connected Basecamp accounts.",
       "parameters_schema": {
         "type": "object",
         "properties": {}
@@ -45,7 +46,7 @@
     },
     {
       "name": "disconnect_basecamp",
-      "description": "Disconnect a Basecamp workspace.",
+      "description": "Disconnect a Basecamp account.",
       "parameters_schema": {
         "type": "object",
         "properties": {
@@ -57,34 +58,8 @@
       }
     },
     {
-      "name": "get_overview",
-      "description": "Read Basecamp account overview and status.",
-      "parameters_schema": {
-        "type": "object",
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          }
-        }
-      }
-    },
-    {
-      "name": "audit_health",
-      "description": "Build health audit report for Basecamp connection.",
-      "parameters_schema": {
-        "type": "object",
-        "properties": {
-          "connection_id": {
-            "type": "string",
-            "default": ""
-          }
-        }
-      }
-    },
-    {
-      "name": "list_resources",
-      "description": "List resources in Basecamp.",
+      "name": "list_projects",
+      "description": "List Basecamp projects.",
       "parameters_schema": {
         "type": "object",
         "properties": {
@@ -92,20 +67,20 @@
             "type": "string",
             "default": ""
           },
-          "limit": {
+          "status": {
+            "type": "string",
+            "default": "active"
+          },
+          "page": {
             "type": "integer",
-            "default": 50
-          },
-          "cursor": {
-            "type": "string",
-            "default": ""
+            "default": 1
           }
         }
       }
     },
     {
-      "name": "get_resource",
-      "description": "Get details of a Basecamp resource.",
+      "name": "get_project",
+      "description": "Read details of a Basecamp project.",
       "parameters_schema": {
         "type": "object",
         "properties": {
@@ -113,14 +88,308 @@
             "type": "string",
             "default": ""
           },
-          "resource_id": {
+          "project_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      }
+    },
+    {
+      "name": "create_project",
+      "description": "Create a new Basecamp project.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "list_todos",
+      "description": "List to-dos in a to-do list.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "todolist_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "default": "active"
+          }
+        },
+        "required": [
+          "project_id",
+          "todolist_id"
+        ]
+      }
+    },
+    {
+      "name": "create_todo",
+      "description": "Create a new to-do in a project to-do list.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "todolist_id": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "default": ""
+          },
+          "due_on": {
+            "type": "string",
+            "default": ""
+          },
+          "assignee_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "default": []
+          }
+        },
+        "required": [
+          "project_id",
+          "todolist_id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "complete_todo",
+      "description": "Mark a to-do as completed.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "todo_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id",
+          "todo_id"
+        ]
+      }
+    },
+    {
+      "name": "uncomplete_todo",
+      "description": "Reopen a previously completed to-do.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "todo_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id",
+          "todo_id"
+        ]
+      }
+    },
+    {
+      "name": "list_messages",
+      "description": "List messages on a project message board.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "message_board_id": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer",
+            "default": 1
+          }
+        },
+        "required": [
+          "project_id",
+          "message_board_id"
+        ]
+      }
+    },
+    {
+      "name": "post_message",
+      "description": "Post a new topic/message to a project message board.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "message_board_id": {
+            "type": "integer"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "content": {
             "type": "string"
           }
         },
         "required": [
-          "resource_id"
+          "project_id",
+          "message_board_id",
+          "subject",
+          "content"
         ]
       }
+    },
+    {
+      "name": "list_webhooks",
+      "description": "List webhooks registered on a project.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      }
+    },
+    {
+      "name": "create_webhook",
+      "description": "Register a new webhook on a project.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "payload_url": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          }
+        },
+        "required": [
+          "project_id",
+          "payload_url"
+        ]
+      }
+    },
+    {
+      "name": "audit_basecamp_health",
+      "description": "Value-add: audit Basecamp account health and project counts.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
     }
-  ]
+  ],
+  "panels": [
+    {
+      "id": "main",
+      "title": "Basecamp",
+      "description": "Basecamp connection and project workspace management."
+    }
+  ],
+  "pricing": {
+    "model": "per_action",
+    "currency": "tokens",
+    "monthly_price": 0,
+    "revenue_split_dev": 70,
+    "free_tools": [
+      "connect_basecamp",
+      "list_connections",
+      "disconnect_basecamp"
+    ],
+    "tool_prices": {
+      "connect_basecamp": 0,
+      "list_connections": 0,
+      "disconnect_basecamp": 0,
+      "list_projects": 8,
+      "get_project": 8,
+      "create_project": 16,
+      "list_todos": 8,
+      "create_todo": 16,
+      "complete_todo": 8,
+      "uncomplete_todo": 8,
+      "list_messages": 8,
+      "post_message": 8,
+      "list_webhooks": 8,
+      "create_webhook": 16,
+      "audit_basecamp_health": 40
+    },
+    "notes": "Canonical pricing aligned with PRICING_POLICY.md (standard scale 0/8/16/20/40/60)."
+  }
 }
