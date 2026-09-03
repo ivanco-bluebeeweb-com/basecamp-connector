@@ -1,0 +1,126 @@
+{
+  "manifest_schema_version": 3,
+  "sdk_version": "5.13.1",
+  "app_id": "basecamp-connector",
+  "version": "0.1.0",
+  "name": "Basecamp",
+  "description": "Official Imperal connector for Basecamp (C25. Project & Work Management). Connect via API key and manage operations securely.",
+  "icon": "icon.svg",
+  "actions_explicit": true,
+  "system": false,
+  "capabilities": [
+    "basecamp:manage"
+  ],
+  "tools": [
+    {
+      "name": "connect_basecamp",
+      "description": "Connect a Basecamp workspace by saving an API key.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "default": ""
+          },
+          "api_key": {
+            "type": "string"
+          },
+          "base_url": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "api_key"
+        ]
+      }
+    },
+    {
+      "name": "list_connections",
+      "description": "List connected Basecamp workspaces.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "disconnect_basecamp",
+      "description": "Disconnect a Basecamp workspace.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "get_overview",
+      "description": "Read Basecamp account overview and status.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "audit_health",
+      "description": "Build health audit report for Basecamp connection.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "list_resources",
+      "description": "List resources in Basecamp.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "limit": {
+            "type": "integer",
+            "default": 50
+          },
+          "cursor": {
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "get_resource",
+      "description": "Get details of a Basecamp resource.",
+      "parameters_schema": {
+        "type": "object",
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "default": ""
+          },
+          "resource_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id"
+        ]
+      }
+    }
+  ]
+}

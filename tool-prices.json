@@ -1,0 +1,9 @@
+{
+  "connect_basecamp": 0,
+  "list_connections": 0,
+  "disconnect_basecamp": 0,
+  "get_overview": 1,
+  "audit_health": 2,
+  "list_resources": 1,
+  "get_resource": 1
+}
