@@ -16,7 +16,7 @@
     {
       "name": "connect_basecamp",
       "description": "Connect Basecamp account via OAuth access token and numeric account ID.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "label": {
@@ -39,7 +39,7 @@
     {
       "name": "list_connections",
       "description": "List connected Basecamp accounts.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {}
       }
@@ -47,7 +47,7 @@
     {
       "name": "disconnect_basecamp",
       "description": "Disconnect a Basecamp account.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -60,7 +60,7 @@
     {
       "name": "list_projects",
       "description": "List Basecamp projects.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -81,7 +81,7 @@
     {
       "name": "get_project",
       "description": "Read details of a Basecamp project.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -100,7 +100,7 @@
     {
       "name": "create_project",
       "description": "Create a new Basecamp project.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -123,7 +123,7 @@
     {
       "name": "list_todos",
       "description": "List to-dos in a to-do list.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -150,7 +150,7 @@
     {
       "name": "create_todo",
       "description": "Create a new to-do in a project to-do list.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -192,7 +192,7 @@
     {
       "name": "complete_todo",
       "description": "Mark a to-do as completed.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -215,7 +215,7 @@
     {
       "name": "uncomplete_todo",
       "description": "Reopen a previously completed to-do.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -238,7 +238,7 @@
     {
       "name": "list_messages",
       "description": "List messages on a project message board.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -265,7 +265,7 @@
     {
       "name": "post_message",
       "description": "Post a new topic/message to a project message board.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -296,7 +296,7 @@
     {
       "name": "list_webhooks",
       "description": "List webhooks registered on a project.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -315,7 +315,7 @@
     {
       "name": "create_webhook",
       "description": "Register a new webhook on a project.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {
@@ -345,7 +345,7 @@
     {
       "name": "audit_basecamp_health",
       "description": "Value-add: audit Basecamp account health and project counts.",
-      "parameters_schema": {
+      "params_schema": {
         "type": "object",
         "properties": {
           "connection_id": {

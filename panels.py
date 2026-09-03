@@ -1,4 +1,4 @@
-"""Panel UI for Basecamp Connector."""
+"""Panel UI for Basecamp Connector following UI_INTERFACE_STANDARD.md."""
 from __future__ import annotations
 from imperal_sdk import ui
 from app import ext
@@ -18,10 +18,9 @@ def _help_modal() -> ui.UINode:
         title="Connecting Basecamp",
         children=[
             ui.Text(
-                "1. Sign in to your Basecamp dashboard and navigate to API & Integrations Settings.\n"
-                "2. Generate an API Key or Bearer Token with suitable permissions.\n"
-                "3. Paste the API Key and optional Base URL into the form on the left.\n"
-                "4. Click Connect Basecamp to verify and save your credentials.",
+                "1. Sign in to your Basecamp dashboard and navigate to API/Integration settings.\n"
+                "2. Generate an API Key, Token or OAuth credential.\n"
+                "3. Enter the details in the form below and click Connect.",
                 variant="body"
             )
         ]
@@ -30,29 +29,45 @@ def _help_modal() -> ui.UINode:
 @ext.panel(slot="sidebar")
 async def main_panel(ctx) -> ui.UINode:
     form = ui.Form(
-        id="connect_basecamp_form",
         submit_label="Connect Basecamp",
         action=ui.Call("connect_basecamp"),
         children=[
-            ui.Input(
-                name="label",
-                label="Connection Label",
-                placeholder="e.g. Production Account"
-            ),
-            ui.Input(
-                name="api_key",
-                label="API Key / Token",
-                placeholder="Enter Basecamp API Key or Bearer Token"
-            ),
-            ui.Input(
-                name="base_url",
-                label="Base URL (optional)",
-                placeholder="https://basecamp.com"
+            ui.Stack(
+                direction="v",
+                gap=2,
+                children=[
+                    ui.Stack(
+                        direction="v",
+                        gap=1,
+                        children=[
+                            ui.Text("Connection Label", variant="label"),
+                            ui.Input(param_name="label", placeholder="e.g. Production Account"),
+                        ]
+                    ),
+                    ui.Stack(
+                        direction="v",
+                        gap=1,
+                        children=[
+                            ui.Text("API Key / Access Token", variant="label"),
+                            ui.Input(param_name="api_key", placeholder="Paste API Key or Token"),
+                        ]
+                    ),
+                    ui.Stack(
+                        direction="v",
+                        gap=1,
+                        children=[
+                            ui.Text("Custom Base URL (optional)", variant="label"),
+                            ui.Input(param_name="base_url", placeholder="Leave empty for default"),
+                        ]
+                    )
+                ]
             )
         ]
     )
 
     return ui.Stack(
+        direction="v",
+        gap=2,
         children=[
             ui.Heading("Basecamp Connector", level=3),
             ui.Text("Connect and manage your Basecamp workspace.", variant="caption"),
