@@ -1,6 +1,7 @@
 """Resource operation handlers for Basecamp Connector."""
 from __future__ import annotations
 from imperal_sdk import ActionResult
+from app import chat
 from handlers_connection import resolve_client
 from schemas import (
     ListProjectsParams, GetProjectParams, CreateProjectParams,
@@ -9,6 +10,7 @@ from schemas import (
     AuditHealthParams
 )
 
+@chat.function("list_projects", action_type="read", description="List Basecamp projects.")
 async def list_projects(params: ListProjectsParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -17,6 +19,7 @@ async def list_projects(params: ListProjectsParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error listing projects: {e}")
 
+@chat.function("get_project", action_type="read", description="Read details of a Basecamp project.")
 async def get_project(params: GetProjectParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -25,6 +28,7 @@ async def get_project(params: GetProjectParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error reading project: {e}")
 
+@chat.function("create_project", action_type="write", description="Create a new Basecamp project.")
 async def create_project(params: CreateProjectParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -33,6 +37,7 @@ async def create_project(params: CreateProjectParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error creating project: {e}")
 
+@chat.function("list_todos", action_type="read", description="List to-dos in a to-do list.")
 async def list_todos(params: ListTodosParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -41,6 +46,7 @@ async def list_todos(params: ListTodosParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error listing to-dos: {e}")
 
+@chat.function("create_todo", action_type="write", description="Create a new to-do in a project to-do list.")
 async def create_todo(params: CreateTodoParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -56,6 +62,7 @@ async def create_todo(params: CreateTodoParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error creating to-do: {e}")
 
+@chat.function("complete_todo", action_type="write", description="Mark a to-do as completed.")
 async def complete_todo(params: CompleteTodoParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -64,6 +71,7 @@ async def complete_todo(params: CompleteTodoParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error completing to-do: {e}")
 
+@chat.function("uncomplete_todo", action_type="write", description="Reopen a completed to-do.")
 async def uncomplete_todo(params: UncompleteTodoParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -72,6 +80,7 @@ async def uncomplete_todo(params: UncompleteTodoParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error reopening to-do: {e}")
 
+@chat.function("list_messages", action_type="read", description="List messages on a project message board.")
 async def list_messages(params: ListMessagesParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -80,6 +89,7 @@ async def list_messages(params: ListMessagesParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error listing messages: {e}")
 
+@chat.function("post_message", action_type="write", description="Post a message to a message board.")
 async def post_message(params: PostMessageParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -88,6 +98,7 @@ async def post_message(params: PostMessageParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error posting message: {e}")
 
+@chat.function("list_webhooks", action_type="read", description="List webhooks registered on a project.")
 async def list_webhooks(params: ListWebhooksParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -96,6 +107,7 @@ async def list_webhooks(params: ListWebhooksParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error listing webhooks: {e}")
 
+@chat.function("create_webhook", action_type="write", description="Create a webhook subscription for project events.")
 async def create_webhook(params: CreateWebhookParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
@@ -104,6 +116,7 @@ async def create_webhook(params: CreateWebhookParams, ctx) -> ActionResult:
     except Exception as e:
         return ActionResult.error(f"Error creating webhook: {e}")
 
+@chat.function("audit_basecamp_health", action_type="read", description="Scan Basecamp account health, active projects, and overdue to-dos.")
 async def audit_basecamp_health(params: AuditHealthParams, ctx) -> ActionResult:
     client = await resolve_client(ctx, params.connection_id)
     try:
