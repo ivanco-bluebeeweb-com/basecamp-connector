@@ -4,7 +4,7 @@ from imperal_sdk import ui
 from app import ext
 import handlers_connection as h
 
-@ext.panel("basecamp_settings", slot="main")
+@ext.panel("basecamp_settings", slot="center")
 async def basecamp_settings(ctx, **kwargs) -> ui.UINode:
     conns = await h._load_connections(ctx)
     items = []

@@ -364,7 +364,7 @@
     },
     {
       "name": "basecamp_settings",
-      "slot": "main",
+      "slot": "center",
       "title": "Basecamp Settings"
     }
   ],
