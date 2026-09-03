@@ -358,9 +358,14 @@
   ],
   "panels": [
     {
-      "id": "main",
-      "title": "Basecamp",
-      "description": "Basecamp connection and project workspace management."
+      "name": "basecamp_sidebar",
+      "slot": "left",
+      "title": "Basecamp Sidebar"
+    },
+    {
+      "name": "basecamp_settings",
+      "slot": "main",
+      "title": "Basecamp Settings"
     }
   ],
   "pricing": {

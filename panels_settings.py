@@ -1,36 +1,35 @@
-"""Settings panel for Basecamp Connector."""
+"""Panel Settings for Basecamp Connector."""
 from __future__ import annotations
 from imperal_sdk import ui
 from app import ext
+import handlers_connection as h
 
-@ext.panel(name="__panel__basecamp_settings", slot="center")
-async def settings_panel(ctx) -> ui.UINode:
-    disconnect_form = ui.Form(
-        id="disconnect_basecamp_form",
-        submit_label="Disconnect Active Account",
-        action=ui.Call("disconnect_basecamp"),
-        children=[
-            ui.Input(
-                name="connection_id",
-                label="Connection ID (leave empty for active)",
-                placeholder="e.g. conn_123"
+@ext.panel("basecamp_settings", slot="main")
+async def basecamp_settings(ctx, **kwargs) -> ui.UINode:
+    conns = await h._load_connections(ctx)
+    items = []
+    for c in conns:
+        items.append(
+            ui.Stack(
+                direction="h",
+                gap=2,
+                children=[
+                    ui.Text(f"{c.get('label')} ({c.get('id')})", variant="body"),
+                    ui.Button(
+                        "Disconnect",
+                        variant="danger",
+                        size="sm",
+                        on_click=ui.Call("disconnect_basecamp", connection_id=c.get("id"))
+                    )
+                ]
             )
-        ]
-    )
-
+        )
     return ui.Stack(
+        direction="v",
+        gap=3,
         children=[
-            ui.Heading("Basecamp Settings & Accounts", level=2),
-            ui.Text("Manage connected credentials and review health metrics.", variant="body"),
+            ui.Text("Basecamp Settings & Accounts", variant="heading"),
             ui.Divider(),
-            ui.Button(
-                "Run Health Audit",
-                variant="primary",
-                on_click=ui.Call("audit_health")
-            ),
-            ui.Divider(),
-            ui.Heading("Disconnect Account", level=3),
-            ui.Text("Removing the connection permanently wipes saved API tokens from secure storage.", variant="caption"),
-            disconnect_form
+            *(items if items else [ui.Text("No active connections to configure.", variant="caption")]),
         ]
     )
